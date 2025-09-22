@@ -2,31 +2,32 @@ import { Component } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, NgIf],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
 export class Login {
   email: string = '';
   password: string = '';
-  errorMessage: string = '';
+  error: string | null = null;
+  loading: boolean = false;
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  onSubmit() {
-    this.authService.login(this.email, this.password).subscribe({
-      next: (response: any) => {
-        localStorage.setItem('token', response.token);
-        this.router.navigate(['/dashboard']);
-      },
-      error: () => {
-        this.errorMessage = 'Invalid credentials. Please try again.';
-      }
-    });
+  async onSubmit() {
+    this.loading = true;
+    this.error = null;
+    try {
+      await this.authService.login(this.email, this.password);
+      this.router.navigate(['/dashboard']);
+    } catch (err: any) {
+      this.error = err.message || 'Login failed';
+    } finally {
+      this.loading = false;
+    }
   }
 }
-

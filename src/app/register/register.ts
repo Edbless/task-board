@@ -11,31 +11,35 @@ import { CommonModule } from '@angular/common';
   styleUrl: './register.css'
 })
 export class Register {
-  name: string = '';
   email: string = '';
+  name: string = '';
   password: string = '';
-  confirmPassword: string = '';
-  errorMessage: string = '';
+  confirmPassword: string = ''; // Added for confirm password field
+  passwordMismatch: boolean = false; // Added for mismatch validation
+  error: string | null = null;
+  loading: boolean = false;
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  get passwordMismatch(): boolean {
-    return this.password !== this.confirmPassword;
-  }
+  async onSubmit() {
+    this.loading = true;
+    this.error = null;
+    this.passwordMismatch = false;
 
-  onSubmit() {
-    if (this.passwordMismatch) {
-      this.errorMessage = 'Passwords do not match.';
+    // Check if passwords match before Firebase call
+    if (this.password !== this.confirmPassword) {
+      this.passwordMismatch = true;
+      this.loading = false;
       return;
     }
 
-    this.authService.register(this.name, this.email, this.password).subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        this.errorMessage = 'Registration failed. Please try again.';
-      }
-    });
+    try {
+      await this.authService.register(this.email, this.password, this.name);
+      this.router.navigate(['/dashboard']);
+    } catch (err: any) {
+      this.error = err.message || 'Registration failed';
+    } finally {
+      this.loading = false;
+    }
   }
 }
